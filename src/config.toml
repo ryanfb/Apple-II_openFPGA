@@ -1,0 +1,26 @@
+[Platform]
+name = "Apple II"
+image = "assets/apple-ii-platform-image.png"
+short_name = "appleii"
+category = "Computer"
+description = "The Apple II 8-bit home computer"
+info = "assets/info.txt"
+
+[Build]
+version = "0.0.1"
+
+[Author]
+name = "ryanfb"
+icon = "assets/apple-ii-core-author-icon.png"
+url = "https://ryanfb.xyz"
+
+[Video]
+width = 280
+height = 192
+aspect_w = 35
+aspect_h = 24
+rotation = 0
+mirror = 0
+
+[Core]
+power_cartridge_port = false
