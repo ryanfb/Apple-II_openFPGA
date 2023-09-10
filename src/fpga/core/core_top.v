@@ -508,8 +508,8 @@ core_bridge_cmd icb (
 // PLL output has a minimum output frequency anyway.
 
 
-assign video_rgb_clock = clk_core_12288;
-assign video_rgb_clock_90 = clk_core_12288_90deg;
+assign video_rgb_clock = clk_pixel_14_318;
+assign video_rgb_clock_90 = clk_pixel_14_318_90deg;
 assign video_rgb = vidout_rgb;
 assign video_de = vidout_de;
 assign video_skip = vidout_skip;
@@ -540,7 +540,7 @@ assign video_hs = vidout_hs;
     reg [9:0]   square_x = 'd135;
     reg [9:0]   square_y = 'd95;
 
-always @(posedge clk_core_12288 or negedge reset_n) begin
+always @(posedge clk_pixel_14_318 or negedge reset_n) begin
 
     if(~reset_n) begin
     
@@ -615,7 +615,7 @@ assign audio_lrck = audgen_lrck;
 // generate MCLK = 12.288mhz with fractional accumulator
     reg         [21:0]  audgen_accum;
     reg                 audgen_mclk;
-    parameter   [20:0]  CYCLE_48KHZ = 21'd122880 * 2;
+    parameter   [20:0]  CYCLE_48KHZ = 21'd143180 * 2;
 always @(posedge clk_74a) begin
     audgen_accum <= audgen_accum + CYCLE_48KHZ;
     if(audgen_accum >= 21'd742500) begin
@@ -653,8 +653,11 @@ end
 ///////////////////////////////////////////////
 
 
-    wire    clk_core_12288;
-    wire    clk_core_12288_90deg;
+    wire    clk_85_9;
+    wire    clk_50;
+    wire    clk_57_27;
+    wire    clk_pixel_14_318;
+    wire    clk_pixel_14_318_90deg;
     
     wire    pll_core_locked;
     wire    pll_core_locked_s;
@@ -664,135 +667,13 @@ mf_pllbase mp1 (
     .refclk         ( clk_74a ),
     .rst            ( 0 ),
     
-    .outclk_0       ( clk_core_12288 ),
-    .outclk_1       ( clk_core_12288_90deg ),
+    .outclk_0       ( clk_85_9 ),
+    .outclk_1       ( clk_50 ),
+    .outclk_2       ( clk_57_27 ),
+    .outclk_3       ( clk_pixel_14_318 ),
+    .outclk_4       ( clk_pixel_14_318_90deg ),
     
     .locked         ( pll_core_locked )
 );
-
-emu emu
-(
-	.CLK_50M(clk_74a),
-	.RESET(reset_n),
-	// .HPS_BUS({fb_en, sl, f1, HDMI_TX_VS, 
-	//			 clk_100m, clk_ihdmi,
-	// 			 ce_hpix, hde_emu, hhs_fix, hvs_fix, 
-	//			 io_wait, clk_sys, io_fpga, io_uio, io_strobe, io_wide, io_din, io_dout}),
-
-	// .VGA_R(r_out),
-	// .VGA_G(g_out),
-	// .VGA_B(b_out),
-	// .VGA_HS(hs_emu),
-	// .VGA_VS(vs_emu),
-	// .VGA_DE(de_emu),
-	// .VGA_F1(f1),
-	// .VGA_SCALER(vga_force_scaler),
-
-`ifndef MISTER_DUAL_SDRAM
-	// .VGA_DISABLE(VGA_DISABLE),
-`endif
-
-	// .HDMI_WIDTH(direct_video ? 12'd0 : hdmi_width),
-	// .HDMI_HEIGHT(direct_video ? 12'd0 : hdmi_height),
-	// .HDMI_FREEZE(freeze),
-
-	// .CLK_VIDEO(clk_vid),
-	// .CE_PIXEL(ce_pix),
-	// .VGA_SL(scanlines),
-	// .VIDEO_ARX(ARX),
-	// .VIDEO_ARY(ARY),
-
-`ifdef MISTER_FB
-	.FB_EN(fb_en),
-	.FB_FORMAT(fb_fmt),
-	.FB_WIDTH(fb_width),
-	.FB_HEIGHT(fb_height),
-	.FB_BASE(fb_base),
-	.FB_STRIDE(fb_stride),
-	.FB_VBL(fb_vbl),
-	.FB_LL(lowlat),
-	.FB_FORCE_BLANK(fb_force_blank),
-
-`ifdef MISTER_FB_PALETTE
-	.FB_PAL_CLK (fb_pal_clk),
-	.FB_PAL_ADDR(fb_pal_a),
-	.FB_PAL_DOUT(fb_pal_d),
-	.FB_PAL_DIN (fb_pal_q),
-	.FB_PAL_WR  (fb_pal_wr),
-`endif
-
-`endif
-/*
-	.LED_USER(led_user),
-	.LED_POWER(led_power),
-	.LED_DISK(led_disk),
-
-	.CLK_AUDIO(clk_audio),
-	.AUDIO_L(audio_l),
-	.AUDIO_R(audio_r),
-	.AUDIO_S(audio_s),
-	.AUDIO_MIX(audio_mix),
-
-	.ADC_BUS({ADC_SCK,ADC_SDO,ADC_SDI,ADC_CONVST}),
-
-	.DDRAM_CLK(ram_clk),
-	.DDRAM_ADDR(ram_address),
-	.DDRAM_BURSTCNT(ram_burstcount),
-	.DDRAM_BUSY(ram_waitrequest),
-	.DDRAM_DOUT(ram_readdata),
-	.DDRAM_DOUT_READY(ram_readdatavalid),
-	.DDRAM_RD(ram_read),
-	.DDRAM_DIN(ram_writedata),
-	.DDRAM_BE(ram_byteenable),
-	.DDRAM_WE(ram_write),
-
-	.SDRAM_DQ(SDRAM_DQ),
-	.SDRAM_A(SDRAM_A),
-	.SDRAM_DQML(SDRAM_DQML),
-	.SDRAM_DQMH(SDRAM_DQMH),
-	.SDRAM_BA(SDRAM_BA),
-	.SDRAM_nCS(SDRAM_nCS),
-	.SDRAM_nWE(SDRAM_nWE),
-	.SDRAM_nRAS(SDRAM_nRAS),
-	.SDRAM_nCAS(SDRAM_nCAS),
-	.SDRAM_CLK(SDRAM_CLK),
-	.SDRAM_CKE(SDRAM_CKE),
-*/
-`ifdef MISTER_DUAL_SDRAM
-	.SDRAM2_DQ(SDRAM2_DQ),
-	.SDRAM2_A(SDRAM2_A),
-	.SDRAM2_BA(SDRAM2_BA),
-	.SDRAM2_nCS(SDRAM2_nCS),
-	.SDRAM2_nWE(SDRAM2_nWE),
-	.SDRAM2_nRAS(SDRAM2_nRAS),
-	.SDRAM2_nCAS(SDRAM2_nCAS),
-	.SDRAM2_CLK(SDRAM2_CLK),
-	.SDRAM2_EN(SW[3]),
-`endif
-/*
-	.BUTTONS(btn),
-	.OSD_STATUS(osd_status),
-
-	.SD_SCK(SD_CLK),
-	.SD_MOSI(SD_MOSI),
-	.SD_MISO(SD_MISO),
-	.SD_CS(SD_CS),
-`ifdef MISTER_DUAL_SDRAM
-	.SD_CD(mcp_sdcd),
-`else
-	.SD_CD(mcp_sdcd & (SW[0] ? VGA_HS : (SW[3] | SDCD_SPDIF))),
-`endif
-
-	.UART_CTS(uart_rts),
-	.UART_RTS(uart_cts),
-	.UART_RXD(uart_txd),
-	.UART_TXD(uart_rxd),
-	.UART_DTR(uart_dsr),
-	.UART_DSR(uart_dtr),
-
-	.USER_OUT(user_out),
-	.USER_IN(user_in)
-*/
-);   
 
 endmodule
