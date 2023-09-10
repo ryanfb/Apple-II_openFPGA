@@ -10,6 +10,7 @@ module MAIN_APPLE2 (
     input wire external_reset,
 
     // Inputs
+    /*
     input wire p1_button_a,
     input wire p1_button_b,
     input wire p1_button_start,
@@ -48,7 +49,7 @@ module MAIN_APPLE2 (
     input wire p4_dpad_down,
     input wire p4_dpad_left,
     input wire p4_dpad_right,
-
+    */
     // Settings
     /*
     input wire hide_overscan,

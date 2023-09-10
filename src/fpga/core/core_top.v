@@ -490,7 +490,16 @@ core_bridge_cmd icb (
 
 );
 
+MAIN_APPLE2 mainapple2 (
+  .clk_74a(clk_74a),
+  .clk_85_9(clk_85_9),
+  .clk_50(clk_50),
+  .clk_57_27(clk_57_27),
+  .clk_pixel_14_318(clk_pixel_14_318),
+  .clock_locked(pll_core_locked),
 
+  .external_reset(reset_n)
+);
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
