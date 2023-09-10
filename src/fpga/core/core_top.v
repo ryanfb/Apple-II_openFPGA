@@ -499,117 +499,80 @@ MAIN_APPLE2 mainapple2 (
   .clock_locked(pll_core_locked),
 
   .external_reset(reset_n),
+  .HBlank(h_blank),
+  .VBlank(v_blank),
+  .HSync(video_hs_apple2),
+  .VSync(video_vs_apple2),
+  .video_r(video_rgb_apple2[23:16]),
+  .video_g(video_rgb_apple2[15:8]),
+  .video_b(video_rgb_apple2[7:0]),
   .audio_l(audio_l),
   .audio_r(audio_r)
 );
 
-////////////////////////////////////////////////////////////////////////////////////////
+// Video
 
+wire h_blank;
+wire v_blank;
+wire video_hs_apple2;
+wire video_vs_apple2;
+wire [23:0] video_rgb_apple2;
 
-
-// video generation
-// ~12,288,000 hz pixel clock
-//
-// we want our video mode of 320x240 @ 60hz, this results in 204800 clocks per frame
-// we need to add hblank and vblank times to this, so there will be a nondisplay area. 
-// it can be thought of as a border around the visible area.
-// to make numbers simple, we can have 400 total clocks per line, and 320 visible.
-// dividing 204800 by 400 results in 512 total lines per frame, and 240 visible.
-// this pixel clock is fairly high for the relatively low resolution, but that's fine.
-// PLL output has a minimum output frequency anyway.
-
+reg video_de_reg;
+reg video_hs_reg;
+reg video_vs_reg;
+reg [23:0] video_rgb_reg;
 
 assign video_rgb_clock = clk_pixel_14_318;
 assign video_rgb_clock_90 = clk_pixel_14_318_90deg;
-assign video_rgb = vidout_rgb;
-assign video_de = vidout_de;
-assign video_skip = vidout_skip;
-assign video_vs = vidout_vs;
-assign video_hs = vidout_hs;
+assign video_de = video_de_reg;
+assign video_hs = video_hs_reg;
+assign video_vs = video_vs_reg;
+assign video_rgb = video_rgb_reg;
 
-    localparam  VID_V_BPORCH = 'd10;
-    localparam  VID_V_ACTIVE = 'd240;
-    localparam  VID_V_TOTAL = 'd512;
-    localparam  VID_H_BPORCH = 'd10;
-    localparam  VID_H_ACTIVE = 'd320;
-    localparam  VID_H_TOTAL = 'd400;
+reg hs_prev;
+reg [2:0] hs_delay;
+reg vs_prev;
+reg de_prev;
 
-    reg [15:0]  frame_count;
-    
-    reg [9:0]   x_count;
-    reg [9:0]   y_count;
-    
-    wire [9:0]  visible_x = x_count - VID_H_BPORCH;
-    wire [9:0]  visible_y = y_count - VID_V_BPORCH;
+wire de = ~(h_blank || v_blank);
+// TODO: Add PAL, add hide_overscan setting
+wire [23:0] video_slot_rgb = {10'b0, 10'b0, 10'b0, 3'b0};
 
-    reg [23:0]  vidout_rgb;
-    reg         vidout_de, vidout_de_1;
-    reg         vidout_skip;
-    reg         vidout_vs;
-    reg         vidout_hs, vidout_hs_1;
-    
-    reg [9:0]   square_x = 'd135;
-    reg [9:0]   square_y = 'd95;
+always @(posedge clk_pixel_14_318) begin
+  video_hs_reg  <= 0;
+  video_de_reg  <= 0;
+  video_rgb_reg <= 24'h0;
 
-always @(posedge clk_pixel_14_318 or negedge reset_n) begin
+  if (de) begin
+    video_de_reg  <= 1;
 
-    if(~reset_n) begin
-    
-        x_count <= 0;
-        y_count <= 0;
-        
-    end else begin
-        vidout_de <= 0;
-        vidout_skip <= 0;
-        vidout_vs <= 0;
-        vidout_hs <= 0;
-        
-        vidout_hs_1 <= vidout_hs;
-        vidout_de_1 <= vidout_de;
-        
-        // x and y counters
-        x_count <= x_count + 1'b1;
-        if(x_count == VID_H_TOTAL-1) begin
-            x_count <= 0;
-            
-            y_count <= y_count + 1'b1;
-            if(y_count == VID_V_TOTAL-1) begin
-                y_count <= 0;
-            end
-        end
-        
-        // generate sync 
-        if(x_count == 0 && y_count == 0) begin
-            // sync signal in back porch
-            // new frame
-            vidout_vs <= 1;
-            frame_count <= frame_count + 1'b1;
-        end
-        
-        // we want HS to occur a bit after VS, not on the same cycle
-        if(x_count == 3) begin
-            // sync signal in back porch
-            // new line
-            vidout_hs <= 1;
-        end
+    video_rgb_reg <= video_rgb_apple2;
+  end else if (de_prev && ~de) begin
+    video_rgb_reg <= video_slot_rgb;
+  end
 
-        // inactive screen areas are black
-        vidout_rgb <= 24'h0;
-        // generate active video
-        if(x_count >= VID_H_BPORCH && x_count < VID_H_ACTIVE+VID_H_BPORCH) begin
+  if (hs_delay > 0) begin
+    hs_delay <= hs_delay - 1;
+  end
 
-            if(y_count >= VID_V_BPORCH && y_count < VID_V_ACTIVE+VID_V_BPORCH) begin
-                // data enable. this is the active region of the line
-                vidout_de <= 1;
-                
-                vidout_rgb[23:16] <= 8'd60;
-                vidout_rgb[15:8]  <= 8'd60;
-                vidout_rgb[7:0]   <= 8'd60;
-                
-            end 
-        end
-    end
+  if (hs_delay == 1) begin
+    video_hs_reg <= 1;
+  end
+
+  if (~hs_prev && video_hs_apple2) begin
+    // HSync went high. Delay by 3 cycles to prevent overlapping with VSync
+    hs_delay <= 7;
+  end
+
+  // Set VSync to be high for a single cycle on the rising edge of the VSync coming out of the core
+  video_vs_reg <= ~vs_prev && video_vs_apple2;
+  hs_prev <= video_hs_apple2;
+  vs_prev <= video_vs_apple2;
+  de_prev <= de;
 end
+
+// Audio
 
 wire [15:0] audio_l;
 wire [15:0] audio_r;
