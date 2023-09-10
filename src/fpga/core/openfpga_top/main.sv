@@ -130,11 +130,8 @@ module MAIN_APPLE2 (
     output [7:0] video_b,
 
     // Audio
-    output [15:0] AUDIO_L,
-    output [15:0] AUDIO_R,
-    output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
-    output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
-    output [15:0] audio
+    output [15:0] audio_l,
+    output [15:0] audio_r
 );
 
 /////////////////  HPS  ///////////////////////////
@@ -172,12 +169,6 @@ wire [15:0] joys = status[6] ? joystick_a0 : {joystick_a0[7:0],joystick_a0[15:8]
 wire [15:0] joya = {status[17] ? pdl : joys[15:8], status[18] ? pdl : joys[7:0]};
 wire  [5:0] joyd = joystick_0[5:0] & {2'b11, {2{~|joys[7:0]}}, {2{~|joys[15:8]}}};
 
-wire [9:0] audio_l, audio_r;
-
-assign AUDIO_L = {1'b0, audio_l, 5'd0};
-assign AUDIO_R = {1'b0, audio_r, 5'd0};
-assign AUDIO_S = 0;
-assign AUDIO_MIX = status[8:7];
 
 reg ce_pix;
 always @(posedge clk_pixel_14_318) begin

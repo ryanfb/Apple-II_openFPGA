@@ -498,7 +498,9 @@ MAIN_APPLE2 mainapple2 (
   .clk_pixel_14_318(clk_pixel_14_318),
   .clock_locked(pll_core_locked),
 
-  .external_reset(reset_n)
+  .external_reset(reset_n),
+  .audio_l(audio_l),
+  .audio_r(audio_r)
 );
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -609,55 +611,20 @@ always @(posedge clk_pixel_14_318 or negedge reset_n) begin
     end
 end
 
+wire [15:0] audio_l;
+wire [15:0] audio_r;
 
+sound_i2s sound_i2s (
+    .clk_74a  (clk_74a),
+    .clk_audio(clk_pixel_14_318),
 
+    .audio_l(audio_l[15:1]),
+    .audio_r(audio_r[15:1]),
 
-//
-// audio i2s silence generator
-// see other examples for actual audio generation
-//
-
-assign audio_mclk = audgen_mclk;
-assign audio_dac = audgen_dac;
-assign audio_lrck = audgen_lrck;
-
-// generate MCLK = 12.288mhz with fractional accumulator
-    reg         [21:0]  audgen_accum;
-    reg                 audgen_mclk;
-    parameter   [20:0]  CYCLE_48KHZ = 21'd143180 * 2;
-always @(posedge clk_74a) begin
-    audgen_accum <= audgen_accum + CYCLE_48KHZ;
-    if(audgen_accum >= 21'd742500) begin
-        audgen_mclk <= ~audgen_mclk;
-        audgen_accum <= audgen_accum - 21'd742500 + CYCLE_48KHZ;
-    end
-end
-
-// generate SCLK = 3.072mhz by dividing MCLK by 4
-    reg [1:0]   aud_mclk_divider;
-    wire        audgen_sclk = aud_mclk_divider[1] /* synthesis keep*/;
-    reg         audgen_lrck_1;
-always @(posedge audgen_mclk) begin
-    aud_mclk_divider <= aud_mclk_divider + 1'b1;
-end
-
-// shift out audio data as I2S 
-// 32 total bits per channel, but only 16 active bits at the start and then 16 dummy bits
-//
-    reg     [4:0]   audgen_lrck_cnt;    
-    reg             audgen_lrck;
-    reg             audgen_dac;
-always @(negedge audgen_sclk) begin
-    audgen_dac <= 1'b0;
-    // 48khz * 64
-    audgen_lrck_cnt <= audgen_lrck_cnt + 1'b1;
-    if(audgen_lrck_cnt == 31) begin
-        // switch channels
-        audgen_lrck <= ~audgen_lrck;
-        
-    end 
-end
-
+    .audio_mclk(audio_mclk),
+    .audio_lrck(audio_lrck),
+    .audio_dac (audio_dac)
+);
 
 ///////////////////////////////////////////////
 
