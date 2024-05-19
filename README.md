@@ -1,5 +1,9 @@
-# Core Template
-This is a template repository for a core which contains all of the core definition JSON files and FPGA starter code.
+# Apple-II_openFPGA
 
-## Legal
-Analogue’s Development program was created to further video game hardware preservation with FPGA technology. Analogue Developers have access to Analogue Pocket I/O’s so Developers can utilize cartridge adapters or interface with other pieces of original or bespoke hardware to support legacy media. Analogue does not support or endorse the unauthorized use or distribution of material protected by copyright or other intellectual property rights.
+[Apple-II_MiSTer](https://github.com/MiSTer-devel/Apple-II_MiSTer) ported to openFPGA (Analogue Pocket).
+
+Based off [open-fpga/core-template](https://github.com/open-fpga/core-template).
+
+## Hierarchy
+
+ * [`src/fpga/rtl`](https://github.com/ryanfb/Apple-II_openFPGA/tree/main/src/fpga/rtl) = [Apple-II_MiSter `rtl`](https://github.com/MiSTer-devel/Apple-II_MiSTer/tree/master/rtl)
