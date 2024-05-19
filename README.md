@@ -8,7 +8,7 @@ Buid with e.g. (from `src/fpga`):
 
     docker run --platform linux/amd64 -t --rm -v $(pwd):/build didiermalenfant/quartus:22.1-apple-silicon quartus_sh --flow compile ap_core
 
-Then from the top-level directory, use [pf-dev-tools](https://pypi.org/project/pf-dev-tools/):
+Then from the top-level directory, use [pf-dev-tools](https://pypi.org/project/pf-dev-tools/) (`pip install pf-dev-tools==1.0.9`):
 
     pf build src/config.toml src/fpga/output_files/ap_core.rbf build
 
