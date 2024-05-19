@@ -12,6 +12,8 @@ Then from the top-level directory, use [pf-dev-tools](https://pypi.org/project/p
 
     pf build src/config.toml src/fpga/output_files/ap_core.rbf build
 
+A zip should be built in `build/`, which you can copy to your Analogue Pocket.
+
 ## Hierarchy
 
  * [`src/fpga/rtl`](https://github.com/ryanfb/Apple-II_openFPGA/tree/main/src/fpga/rtl) = [Apple-II_MiSter `rtl`](https://github.com/MiSTer-devel/Apple-II_MiSTer/tree/master/rtl)
