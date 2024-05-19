@@ -189,7 +189,6 @@ assign VGA_F1    = 0;
 assign HDMI_FREEZE = 0;
 
 wire [1:0] ar = status[13:12];
-/*
 video_freak video_freak
 (
 	.*,
@@ -201,7 +200,12 @@ video_freak video_freak
 	.CROP_OFF(0),
 	.SCALE(status[15:14])
 );
-*/
+
+// Status Bit Map:
+// 0         1         2         3          4         5         6
+// 01234567890123456789012345678901 23456789012345678901234567890123
+// 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
+// X   XXXXXXXXXXXXXXXXXXXXXXXX
 
 `include "build_id.v" 
 parameter CONF_STR = {
@@ -209,26 +213,43 @@ parameter CONF_STR = {
 	"-;",
 	"S0,NIBDSKDO PO ;",
 	"S2,NIBDSKDO PO ;",
+	"OQR,Write Protect,None,Drive 1,Drive 2,Drive 1 & 2;",
+	"-;",
 	"S1,HDV;",
 	"-;",
-	"OCD,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"OJL,Display,Color 1,Color 2,B&W,Green,Amber;",
-	"O9B,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;", 
-	"OEF,Scale,Normal,V-Integer,Narrower HV-Integer,Wider HV-Integer;",
-	"OG,Pixel Clock,Double,Normal;",
+	"OJK,Display,Color,B&W,Green,Amber;",
+	"OOP,Color palette,NTSC //e,IIgs,AppleWin,PAL //c;",
 	"-;",
-	"O5,CPU,65C02,6502;",
-	"O4,Mocking board,Yes,No;",
-	"O78,Stereo mix,none,25%,50%,100%;",
-	"OM,PAL Mode,NTSC,PAL;",
-	"ON,Video Rom,US,LOCAL;",
-	"F1,BIN,Load 8k Video ROM;", 
-	"-;",
-	"O6,Analog X/Y,Normal,Swapped;",
-	"OHI,Paddle as analog,No,X,Y;",
+	"P1,System & BIOS;",
+	"P1-;",
+	"P1O5,CPU,65C02,6502;",
+	"P1OM,PAL Mode,NTSC,PAL;",
+	"P1-;",
+	"P1ON,Video Rom,US,LOCAL;",
+	"P1F1,BIN,Load 8k Video ROM;", 
+	"P1-;",	
+	"P2,Audio & Video;",
+	"P2-;",	
+	"P2O4,Mocking board,Yes,No;",
+	"P2O78,Stereo mix,none,25%,50%,100%;",
+	"P2-;",	
+	"P2OG,Pixel Clock,Double,Normal;",
+	"P2OL,Lo-Res Text,Clean,Composite;",
+	"P2-;",	
+	"P2O9B,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;", 
+	"P2OCD,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
+	"P2OEF,Scale,Normal,V-Integer,Narrower HV-Integer,Wider HV-Integer;",
+	"P2-;",	
+	"P3,Hardware;",
+	"P3-;",	
+	"P3O6,Analog X/Y,Normal,Swapped;",
+	"P3OHI,Paddle as analog,No,X,Y;",
+	"P3-;",	
 	"-;",
 	"R0,Cold Reset;",
 	"JA,Fire 1,Fire 2;",
+	"jn,A|P,B;",
+	"jp,Y|P,B;",
 	"V,v",`BUILD_DATE
 };
 
@@ -236,7 +257,6 @@ parameter CONF_STR = {
 
 wire clk_sys;
 
-/*
 pll pll
 (
 	.refclk(CLK_50M),
@@ -244,7 +264,6 @@ pll pll
 	.outclk_0(CLK_VIDEO),
 	.outclk_1(clk_sys)
 );
-*/
 
 /////////////////  HPS  ///////////////////////////
 
@@ -282,7 +301,6 @@ wire  [7:0] ioctl_data;
 
 wire soft_reset;
 
-/*
 hps_io #(.CONF_STR(CONF_STR), .VDNUM(3)) hps_io
 (
 	.clk_sys(clk_sys),
@@ -290,6 +308,8 @@ hps_io #(.CONF_STR(CONF_STR), .VDNUM(3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
+	.status_in({status[31:26],palette_req,status[23:21],screen_mode_req,status[18:0]}),
+	.status_set(video_toggle || palette_toggle),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 
@@ -321,7 +341,6 @@ hps_io #(.CONF_STR(CONF_STR), .VDNUM(3)) hps_io
 	.RTC(RTC)
 
 );
-*/
 
 ///////////////////////////////////////////////////
 
@@ -348,31 +367,42 @@ end
 wire led;
 wire hbl,vbl;
 
-reg [1:0] screen_mode;
-reg       text_color;
+reg       text_color = 0;
+reg       video_toggle = 0;
+reg       palette_toggle = 0;
+wire [1:0] screen_mode;
+wire [1:0] palette_mode;
+reg [1:0] screen_mode_req;
+reg [1:0] palette_req;
 
-always @(status[21:19]) case (status[21:19])
-	3'b001: begin
-		screen_mode = 2'b00;
-		text_color = 1;
-	end
-	3'b010: begin
-		screen_mode = 2'b01;
-		text_color = 0;
-	end
-	3'b011: begin
-		screen_mode = 2'b10;
-		text_color = 0;
-	end
-	3'b100: begin
-		screen_mode = 2'b11;
-		text_color = 0;
-	end
-	default: begin
-		screen_mode = 2'b00;
-		text_color = 0;
-	end
-endcase // always @ (status[21:19])
+assign screen_mode = status[20:19];
+assign palette_mode = status[25:24];
+
+always @(posedge clk_sys) begin
+	reg old_toggle = 0;
+	reg old_pal_toggle = 0;
+
+	old_toggle <= video_toggle;
+	old_pal_toggle <= palette_toggle;
+
+	// display change request from keyboard
+	if (video_toggle != old_toggle) begin
+		screen_mode_req = screen_mode + 1'b1;
+	end 
+	
+	// palette change request from keyboard
+	if (palette_toggle != old_pal_toggle) begin
+		palette_req = palette_mode + 1'b1;
+		screen_mode_req = 2'b00; //force color when switching palettes
+	end;
+	
+end
+
+always @(posedge clk_sys) begin	
+	// flag to enable Lo-Res text artifacting, only applicable in screen mode 2'b00
+	text_color <= (~status[20] & ~status[19] & status[21]);
+end  
+
 
 apple2_top apple2_top
 (
@@ -393,8 +423,11 @@ apple2_top apple2_top
 	.r(R),
 	.g(G),
 	.b(B),
-	.SCREEN_MODE(screen_mode),
-	.TEXT_COLOR(text_color),
+	.video_switch(video_toggle),
+	.palette_switch(palette_toggle),
+	.SCREEN_MODE( status[20:19] ),
+	.TEXT_COLOR( text_color ),
+	.COLOR_PALETTE(status[25:24]),
 	.PALMODE(status[22]),
 	.ROMSWITCH(~status[23]),
 
@@ -427,6 +460,9 @@ apple2_top apple2_top
 	.D1_ACTIVE(D1_ACTIVE),
 	.D2_ACTIVE(D2_ACTIVE),
 	.DISK_ACT(led),
+
+	.D1_WP(status[26]),
+	.D2_WP(status[27]),
 
 	.HDD_SECTOR(sd_lba[1]),
 	.HDD_READ(hdd_read),
@@ -470,14 +506,12 @@ assign VGA_SL = sl[1:0];
 wire [7:0] R,G,B;
 wire HSync, VSync, HBlank, VBlank;
 
-/*
 video_mixer #(.LINE_LENGTH(580), .GAMMA(1)) video_mixer
 (
 	.*,
 	.hq2x(scale==1),
 	.freeze_sync()
 );
-*/
 
 wire [17:0] ram_addr;
 reg  [15:0] ram_dout;
@@ -654,7 +688,6 @@ floppy_track floppy_track_2
 
 
 wire tape_adc, tape_adc_act;
-/*
 ltc2308_tape ltc2308_tape
 (
 	.clk(CLK_50M),
@@ -662,6 +695,5 @@ ltc2308_tape ltc2308_tape
 	.dout(tape_adc),
 	.active(tape_adc_act)
 );
-*/
 
 endmodule
