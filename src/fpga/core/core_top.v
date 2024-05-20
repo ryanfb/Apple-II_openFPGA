@@ -404,10 +404,110 @@ end
 // bridge data slot access
 // synchronous to clk_74a
 
-    wire    [9:0]   datatable_addr;
-    wire            datatable_wren;
-    wire    [31:0]  datatable_data;
+    reg    [9:0]   datatable_addr;
+    reg            datatable_wren;
+    reg    [31:0]  datatable_data;
     wire    [31:0]  datatable_q;
+
+    reg is_downloading = 0;
+
+    wire ioctl_download = is_downloading && dataslot_requestwrite_id == 0;
+    wire palette_download = is_downloading && dataslot_requestwrite_id == 11;
+
+    wire has_save;
+
+    always @(posedge clk_74a) begin
+      if (dataslot_requestwrite) is_downloading <= 1;
+      else if (dataslot_allcomplete) is_downloading <= 0;
+    end
+
+    always @(posedge clk_74a or negedge pll_core_locked) begin
+      if (~pll_core_locked) begin
+        datatable_addr <= 0;
+        datatable_data <= 0;
+        datatable_wren <= 0;
+      end else begin
+        // Write sram size
+        datatable_wren <= 1;
+        datatable_data <= has_save ? 32'h40_000 : 32'h0;
+        // Data slot index 1, not id 1
+        datatable_addr <= 1 * 2 + 1;
+      end
+    end
+
+    // Data Loader 8
+    wire ioctl_wr;
+    wire [7:0] ioctl_dout;
+    wire [7:0] ioctl_index = 0;
+    wire [27:0] ioctl_addr;
+
+    data_loader #(
+        .ADDRESS_MASK_UPPER_4(4'h1)
+    ) data_loader (
+        .clk_74a(clk_74a),
+        .clk_memory(clk_pixel_14_318),
+
+        .bridge_wr(bridge_wr),
+        .bridge_endian_little(bridge_endian_little),
+        .bridge_addr(bridge_addr),
+        .bridge_wr_data(bridge_wr_data),
+
+        .write_en  (ioctl_wr),
+        .write_addr(ioctl_addr),  // Unused
+        .write_data(ioctl_dout)
+    );
+
+    wire [31:0] sd_read_data;
+
+    wire sd_buff_wr;
+    wire sd_buff_rd;
+
+    wire [17:0] sd_buff_addr_in;
+    wire [17:0] sd_buff_addr_out;
+
+    wire [17:0] sd_buff_addr = sd_buff_wr ? sd_buff_addr_in : sd_buff_addr_out;
+
+    wire [7:0] sd_buff_din;
+    wire [7:0] sd_buff_dout;
+
+    data_unloader #(
+        .ADDRESS_MASK_UPPER_4(4'h2),
+        .ADDRESS_SIZE(18),
+        .READ_MEM_CLOCK_DELAY(7)
+    ) save_data_unloader (
+        .clk_74a(clk_74a),
+        .clk_memory(clk_pixel_14_318),
+
+        .bridge_rd(bridge_rd),
+        .bridge_endian_little(bridge_endian_little),
+        .bridge_addr(bridge_addr),
+        .bridge_rd_data(sd_read_data),
+
+        .read_en  (sd_buff_rd),
+        .read_addr(sd_buff_addr_out),
+        .read_data(sd_buff_din)
+    );
+
+    data_loader #(
+        .ADDRESS_MASK_UPPER_4(4'h2),
+        .ADDRESS_SIZE(18),
+        .WRITE_MEM_CLOCK_DELAY(7),
+        .WRITE_MEM_EN_CYCLE_LENGTH(3)
+    ) save_data_loader (
+        .clk_74a(clk_74a),
+        .clk_memory(clk_pixel_14_318),
+
+        .bridge_wr(bridge_wr),
+        .bridge_endian_little(bridge_endian_little),
+        .bridge_addr(bridge_addr),
+        .bridge_wr_data(bridge_wr_data),
+
+        .write_en  (sd_buff_wr),
+        .write_addr(sd_buff_addr_in),
+        .write_data(sd_buff_dout)
+    );
+
+
 
 core_bridge_cmd icb (
 
@@ -507,7 +607,13 @@ MAIN_APPLE2 mainapple2 (
   .video_g(video_rgb_apple2[15:8]),
   .video_b(video_rgb_apple2[7:0]),
   .audio_l(audio_l),
-  .audio_r(audio_r)
+  .audio_r(audio_r),
+
+  .ioctl_wr(ioctl_wr),
+  .ioctl_addr(ioctl_addr),
+  .ioctl_dout(ioctl_dout),
+  .ioctl_index(ioctl_index),
+  .ioctl_download(ioctl_download)
 );
 
 // Video

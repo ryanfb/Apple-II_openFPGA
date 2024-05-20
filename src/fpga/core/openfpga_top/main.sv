@@ -67,6 +67,7 @@ module MAIN_APPLE2 (
     input wire        ioctl_wr,
     input wire [27:0] ioctl_addr,
     input wire [ 7:0] ioctl_dout,
+    input wire [ 7:0] ioctl_index,
     input wire        ioctl_download,
 
     // UART
@@ -281,7 +282,7 @@ apple2_top apple2_top
 	.ioctl_addr(ioctl_addr),
 	.ioctl_data(ioctl_dout),
 	.ioctl_download(ioctl_download),
-	.ioctl_index(ioctl_dout),
+	.ioctl_index(ioctl_index),
 	.ioctl_wr(ioctl_wr),
 
 
