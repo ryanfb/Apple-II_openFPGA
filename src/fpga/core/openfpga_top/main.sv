@@ -138,8 +138,8 @@ module MAIN_APPLE2 (
 
 /////////////////  HPS  ///////////////////////////
 
-wire [31:0] status;
-wire  [1:0] buttons;
+wire [31:0] status = 0;
+wire  [1:0] buttons = 0;
 wire        forced_scandoubler;
 wire [21:0] gamma_bus;
 
