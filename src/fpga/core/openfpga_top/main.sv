@@ -71,13 +71,14 @@ module MAIN_APPLE2 (
     input wire        ioctl_download,
 
     // UART
+    /*
     input         UART_CTS,
     output        UART_RTS,
     input         UART_RXD,
     output        UART_TXD,
     output        UART_DTR,
     input         UART_DSR,
-
+    */
 
     /*
     input wire palette_download,
@@ -285,7 +286,7 @@ apple2_top apple2_top
 	.ioctl_index(ioctl_index),
 	.ioctl_wr(ioctl_wr),
 
-
+/*
 	.UART_TXD(UART_TXD),
 	.UART_RXD(UART_RXD), // input
 	.UART_RTS(UART_RTS),
@@ -293,7 +294,7 @@ apple2_top apple2_top
 	.UART_DTR(UART_DTR),
 	.UART_DSR(UART_DSR), // input
 	.RTC(RTC)
-
+*/
 );
 
 wire [2:0] scale = status[11:9];
