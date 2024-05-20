@@ -147,7 +147,7 @@ wire [15:0] joystick_0;
 wire [15:0] joystick_a0;
 wire  [7:0] paddle_0;
 
-wire [10:0] ps2_key;
+wire [10:0] ps2_key = 0;
 
 wire [31:0] sd_lba[3];
 reg   [2:0] sd_rd;
