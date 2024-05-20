@@ -16,4 +16,5 @@ A zip should be built in `build/`, which you can copy to your Analogue Pocket.
 
 ## Notes
 
- * [`src/fpga/rtl`](https://github.com/ryanfb/Apple-II_openFPGA/tree/main/src/fpga/rtl) = [Apple-II_MiSter `rtl`](https://github.com/MiSTer-devel/Apple-II_MiSTer/tree/master/rtl). The goal is not to touch upstream MiSTer RTL and just wire a new openFPGA system interface into it. If this seems feasible, I may convert this to a git submodule.
+ * [`src/fpga/rtl`](https://github.com/ryanfb/Apple-II_openFPGA/tree/main/src/fpga/rtl) = [Apple-II_MiSTer `rtl`](https://github.com/MiSTer-devel/Apple-II_MiSTer/tree/master/rtl). The goal is not to touch upstream MiSTer RTL and just wire a new openFPGA system interface into it. If this seems feasible, I may convert this to a git submodule.
+ * Instead of using [Apple-II_MiSTer's (MiSTer-specific) `module emu` in `Apple-II.sv`](https://github.com/MiSTer-devel/Apple-II_MiSTer/blob/master/Apple-II.sv), we declare [a new (openFPGA-specific) `module MAIN_APPLE2` in `src/fpga/core/openfpga_top.sv`](https://github.com/ryanfb/Apple-II_openFPGA/blob/main/src/fpga/core/openfpga_top/main.sv). This is used from [the main openFPGA core top in `src/fpga/core/core_top.v`](https://github.com/ryanfb/Apple-II_openFPGA/blob/main/src/fpga/core/core_top.v).
