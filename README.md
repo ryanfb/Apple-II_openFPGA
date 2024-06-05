@@ -4,6 +4,10 @@
 
 Based off [open-fpga/core-template](https://github.com/open-fpga/core-template).
 
+![A screenshot of an Analogue Pocket displaying the Apple II text-mode bootsplash](./bootsplash.jpg)
+
+## Building
+
 Build with e.g.:
 
     docker run --platform linux/amd64 -t --rm -v $(pwd)/src/fpga:/build didiermalenfant/quartus:22.1-apple-silicon quartus_sh --flow compile ap_core
